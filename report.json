@@ -1,0 +1,11 @@
+{
+  "run_name": "oyez-baseline-strict",
+  "timestamp": "2025-09-25",
+  "AEM": 0.0,
+  "TokenF1": 0.0,
+  "SpanF1": 0.0,
+  "PI": 1.0,
+  "provenance": "STRICT",
+  "manifest_hash_ok": true,
+  "signature_verified": true
+}
