@@ -1,0 +1,3 @@
+{"qid": "q1", "question": "What does RAG stand for?", "gold_answer": "Retrieval-augmented generation (RAG)", "gold_citations": [{"doc_id": "docA", "shard_id": "docA_s1", "span_start": 0, "span_end": 36}]}
+{"qid": "q2", "question": "How does a Merkle tree help detect tampering?", "gold_answer": "By linking many hashes into a single root so changes are detectable", "gold_citations": [{"doc_id": "docB", "shard_id": "docB_s1", "span_start": 2, "span_end": 50}]}
+{"qid": "q3", "question": "What does a TEE attest to?", "gold_answer": "The code and environment used to run an evaluation", "gold_citations": [{"doc_id": "docC", "shard_id": "docC_s1", "span_start": 10, "span_end": 44}]}

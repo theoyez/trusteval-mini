@@ -1,0 +1,3 @@
+{"qid": "q1", "answer": "RAG stands for Retrieval-augmented generation (RAG).", "citations": [{"doc_id": "docA", "shard_id": "docA_s1", "span_start": 0, "span_end": 36}]}
+{"qid": "q2", "answer": "It links many hashes into a single root; changes become detectable.", "citations": [{"doc_id": "docB", "shard_id": "docB_s1", "span_start": 2, "span_end": 50}]}
+{"qid": "q3", "answer": "A TEE attests to the code and environment used for evaluation.", "citations": [{"doc_id": "docC", "shard_id": "docC_s1", "span_start": 10, "span_end": 44}]}

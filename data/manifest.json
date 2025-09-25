@@ -1,0 +1,28 @@
+{
+  "docs": {
+    "docA": {
+      "title": "Trusted Retrieval 101",
+      "shards": [
+        "f6f4386fdc3fb034b478710e98df5f86221ba5977199e4ab9a9ff798d62608ef",
+        "d7793a441efefea5bd99da7a374a8e04bdcc50e7e0fb3e5667ae3b2cc638fa6c"
+      ],
+      "merkle_root": "d2b3d3868d9f9e29b65fc1214e4cedd4aaa5a938e5523cdc7d30e91a434cc580"
+    },
+    "docB": {
+      "title": "Merkle Hashes in Plain English",
+      "shards": [
+        "f19f9225709f9487df981254cdc05f7fc4f1a801def128a3c05a96db551ae1f8",
+        "164d0ac01044fd73e77fba73e8dab47f03e635db1edc19c6a2bd01b6ec00c791"
+      ],
+      "merkle_root": "ee2a5e422112270a26ef21885e2e7452aba74394419899180002e522f84466e7"
+    },
+    "docC": {
+      "title": "Trusted Execution Environments",
+      "shards": [
+        "cb0484edd1eb05f38b271555b956d3fe0560d48b528ac46ba91c9f860ed60e89",
+        "22e24a2e598d54b542370a6cb88df4163a34730623bf2f0ad6e8255f226120ca"
+      ],
+      "merkle_root": "ff64ea9b45286b62f7ddea8389de9943705fc911fae35997e3f9d843abfce39b"
+    }
+  }
+}
