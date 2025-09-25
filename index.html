@@ -2,56 +2,102 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>TrustEval-Mini v0.6.1 — Leaderboard</title>
+  <title>TrustEval-Mini — Leaderboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:24px}
-    h1{margin:0 0 12px}
-    table{border-collapse:collapse;width:100%}
-    th,td{border:1px solid #ddd;padding:8px;text-align:left}
-    th{background:#f6f6f6}
-    .muted{color:#666}
-    .bar{display:flex;gap:8px;margin:12px 0 24px}
+    h1{margin:0 0 8px}
+    .muted{color:#666;margin:0 0 12px}
+    .bar{display:flex;gap:8px;margin:12px 0 16px;flex-wrap:wrap}
     .btn{display:inline-block;padding:8px 12px;border:1px solid #ddd;border-radius:8px;text-decoration:none;color:#111}
     .btn:hover{background:#f9f9f9}
+    .tools{display:flex;gap:8px;align-items:center;margin:10px 0}
+    input[type="search"]{padding:8px 10px;border:1px solid #ddd;border-radius:8px;min-width:240px}
+    table{border-collapse:collapse;width:100%}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    th{background:#f6f6f6;cursor:pointer;user-select:none}
+    tr.hide{display:none}
     code{background:#f4f4f4;padding:2px 4px;border-radius:4px}
   </style>
 </head>
 <body>
-  <h1>TrustEval-Mini v0.6.1 — Leaderboard</h1>
-  <p class="muted">Runs in <b>STRICT</b> or <b>DERIVED</b> provenance modes. Submit a PR adding a row to <code>scores.csv</code>, or email a report for inclusion.</p>
+  <h1>TrustEval-Mini — Leaderboard</h1>
+  <p class="muted">Runs in <b>STRICT</b> or <b>DERIVED</b> provenance modes. Submit a PR adding a row to <code>scores.csv</code>; CI verifies the numbers match your report.</p>
 
   <div class="bar">
     <a class="btn" href="https://github.com/theoyez/trusteval-mini">GitHub Repo</a>
     <a class="btn" href="scores.csv">scores.csv</a>
     <a class="btn" href="https://github.com/theoyez/trusteval-mini/blob/main/CONTRIBUTING.md">How to submit</a>
+    <a class="btn" href="https://theoyez.org/">theoyez.org</a>
+  </div>
+
+  <div class="tools">
+    <input id="q" type="search" placeholder="Filter by run name or notes…">
+    <span class="muted">Click headers to sort</span>
   </div>
 
   <table id="t">
     <thead><tr>
-      <th>Run</th><th>AEM</th><th>TokenF1</th><th>SpanF1</th><th>PI</th><th>When</th><th>Notes</th>
+      <th data-k="Run">Run</th>
+      <th data-k="AEM">AEM</th>
+      <th data-k="TokenF1">TokenF1</th>
+      <th data-k="SpanF1">SpanF1</th>
+      <th data-k="PI">PI</th>
+      <th data-k="When">When</th>
+      <th data-k="Notes">Notes</th>
     </tr></thead>
     <tbody></tbody>
   </table>
 
   <script>
+    const tb = document.querySelector('#t tbody');
+    let rows = [];
     fetch('scores.csv',{cache:'no-store'})
       .then(r=>r.text())
       .then(txt=>{
         const lines = txt.trim().split('\n');
         if(lines.length<2) return;
-        const rows = lines.slice(1).map(r=>r.split(','));
-        const tb = document.querySelector('#t tbody');
-        rows.forEach(r=>{
-          const tr=document.createElement('tr');
-          r.forEach(c=>{
-            const td=document.createElement('td');
-            td.textContent=c;
-            tr.appendChild(td);
-          });
-          tb.appendChild(tr);
+        rows = lines.slice(1).map(r=>{
+          const [Run,AEM,TokenF1,SpanF1,PI,When,Notes] = r.split(',');
+          return {Run,AEM:+AEM,TokenF1:+TokenF1,SpanF1:+SpanF1,PI:+PI,When,Notes};
         });
-      }).catch(console.error);
+        render(rows);
+      });
+
+    function render(list){
+      tb.innerHTML='';
+      list.forEach(r=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td>${r.Run}</td><td>${r.AEM.toFixed(2)}</td><td>${r.TokenF1.toFixed(2)}</td>
+                        <td>${r.SpanF1.toFixed(2)}</td><td>${r.PI.toFixed(2)}</td>
+                        <td>${r.When}</td><td>${r.Notes||''}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+
+    // sorting
+    document.querySelectorAll('th[data-k]').forEach(th=>{
+      th.addEventListener('click',()=>{
+        const k = th.dataset.k;
+        const asc = th.dataset.asc!=='true';
+        document.querySelectorAll('th').forEach(x=>x.removeAttribute('data-asc'));
+        th.dataset.asc = asc;
+        const list = [...rows].sort((a,b)=>{
+          const A=a[k], B=b[k];
+          const va = (typeof A==='number')?A:(k==='When'?Date.parse(A):String(A).toLowerCase());
+          const vb = (typeof B==='number')?B:(k==='When'?Date.parse(B):String(B).toLowerCase());
+          return asc ? (va>vb?1:va<vb?-1:0) : (va<vb?1:va>vb?-1:0);
+        });
+        render(list);
+      });
+    });
+
+    // filter
+    document.querySelector('#q').addEventListener('input', (e)=>{
+      const q = e.target.value.toLowerCase();
+      const list = rows.filter(r => (r.Run+r.Notes).toLowerCase().includes(q));
+      render(list);
+    });
   </script>
 </body>
 </html>
