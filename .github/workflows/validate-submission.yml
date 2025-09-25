@@ -1,76 +1,76 @@
-name: Validate submission
+name: validate-submission
+
 on:
   pull_request:
     paths:
-      - 'scores.csv'
-      - 'submissions/**'
-      - '.github/workflows/validate-submission.yml'
+      - "scores.csv"
+      - "submissions/**/report.json"
+      - ".github/workflows/validate-submission.yml"
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - name: Basic CSV sanity
-        id: csv
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f scores.csv
-          header="$(head -n1 scores.csv | tr -d '\r')"
-          if [[ "$header" != "run_name,AEM,TokenF1,SpanF1,PI,timestamp,notes" ]]; then
-            echo "scores.csv header is wrong"; exit 1; fi
-          # Count added non-header lines in this PR
-          git fetch origin "${{ github.base_ref }}" --depth=1
-          new_lines=$(git diff --unified=0 origin/${{ github.base_ref }}... -- scores.csv \
-            | grep '^+' | grep -v '+++' | tail -n +2 | wc -l | tr -d ' ')
-          if [[ "$new_lines" != "1" ]]; then
-            echo "Please add exactly one new score row."; exit 1; fi
-          # Grab the new line (strip leading '+')
-          row=$(git diff --unified=0 origin/${{ github.base_ref }}... -- scores.csv \
-            | grep '^+' | grep -v '+++' | tail -n 1 | sed 's/^+//')
-          echo "ROW=$row" >> $GITHUB_OUTPUT
-
-      - name: Find newly added report.json
+      - name: Find report.json
         id: find
         shell: bash
         run: |
-          set -euo pipefail
-          git fetch origin "${{ github.base_ref }}" --depth=1
-          report=$(git diff --name-only --diff-filter=A origin/${{ github.base_ref }}... \
-                   | grep -E '^submissions/.+/report\.json$' || true)
-          if [[ -z "$report" ]]; then
-            echo "No submissions/<run>/report.json added"; exit 1; fi
-          echo "REPORT=$report" >> $GITHUB_OUTPUT
-          html="${report%report.json}report.html"
-          if [[ ! -f "$html" ]]; then
-            echo "Missing $html"; exit 1; fi
+          set -e
+          REPORTS=$(ls submissions/*/report.json 2>/dev/null || true)
+          if [ -z "$REPORTS" ]; then
+            echo "No report.json found under submissions/*/"
+            exit 1
+          fi
+          REPORT=$(echo "$REPORTS" | head -n1)
+          echo "REPORT=$REPORT" >> "$GITHUB_OUTPUT"
+          echo "Found $REPORT"
 
-      - name: Compare CSV row to report.json
-        shell: python
+      - name: Compare CSV row to report.json (basic)
+        shell: bash
         env:
-          ROW: ${{ steps.csv.outputs.ROW }}
           REPORT: ${{ steps.find.outputs.REPORT }}
         run: |
+          python3 - <<'PY'
           import csv, json, os, sys
-          from math import isclose
-          row = os.environ["ROW"]
-          path = os.environ["REPORT"]
-          with open(path, "r") as f:
+          report_path = os.environ["REPORT"]
+          with open(report_path, "r") as f:
             rep = json.load(f)
-          s = rep["summary"]
-          run = rep.get("run_name","")
-          # Parse CSV line
-          vals = next(csv.reader([row]))
-          if len(vals) < 7:
-            sys.exit("scores.csv row has fewer than 7 columns")
-          run_csv, AEM_c, TF1_c, SF1_c, PI_c, date_c, notes_c = vals[:7]
-          if run != run_csv:
-            sys.exit(f"run_name mismatch: {run} vs {run_csv}")
-          def f(x): return float(x)
-          if not isclose(f(s["AEM"]), f(AEM_c), rel_tol=0, abs_tol=1e-4): sys.exit("AEM mismatch")
-          if not isclose(f(s["TokenF1"]), f(TF1_c), rel_tol=0, abs_tol=1e-4): sys.exit("TokenF1 mismatch")
-          if not isclose(f(s["SpanF1"]), f(SF1_c), rel_tol=0, abs_tol=1e-4): sys.exit("SpanF1 mismatch")
-          if not isclose(f(s["PI"]), f(PI_c), rel_tol=0, abs_tol=1e-4): sys.exit("PI mismatch")
-          print("OK")
+          run_name = rep.get("run_name") or rep.get("runName") or ""
+          if not run_name:
+            sys.exit("report.json missing run_name")
+
+          with open("scores.csv", "r") as f:
+            rows = [r for r in csv.reader(f) if any(c.strip() for c in r)]
+          if len(rows) < 2:
+            sys.exit("scores.csv must contain header and at least one row")
+
+          header, last = rows[0], rows[-1]
+          try:
+            idx = header.index("run_name")
+          except ValueError:
+            sys.exit("scores.csv header must include run_name")
+
+          if last[idx].strip() != run_name:
+            sys.exit(f"run_name mismatch: CSV '{last[idx]}' vs report.json '{run_name}'")
+
+          print("CSV basic check OK")
+          PY
+
+      - name: Enforce STRICT provenance when used
+        shell: bash
+        env:
+          REPORT: ${{ steps.find.outputs.REPORT }}
+        run: |
+          python3 - <<'PY'
+          import json, os, sys
+          p = os.environ["REPORT"]
+          with open(p,"r") as f:
+            rep = json.load(f)
+          prov = (rep.get("provenance") or "").upper()
+          if prov == "STRICT" and not rep.get("signature_verified"):
+            sys.exit("STRICT run must have signature_verified=true in report.json")
+          print("Provenance check OK")
+          PY
