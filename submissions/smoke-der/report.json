@@ -1,0 +1,9 @@
+{
+  "run_name": "smoke-der",
+  "AEM": 0.11,
+  "TokenF1": 0.12,
+  "SpanF1": 0.10,
+  "PI": 1.0,
+  "provenance": "DERIVED",
+  "signature_verified": false
+}
