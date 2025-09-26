@@ -136,6 +136,62 @@
   });
 })();
 </script>
+<script>
+  // Add a "Report" column with "View" links for each row
+  function addReportLinks() {
+    const table = document.querySelector('table');
+    if (!table) return;
+
+    // Ensure the header exists and is uniquely identifiable
+    const thead = table.tHead;
+    if (thead && !thead.querySelector('th.report-col')) {
+      const th = document.createElement('th');
+      th.textContent = 'Report';
+      th.className = 'report-col';
+      thead.rows[0].appendChild(th);
+    }
+
+    const tbody = table.tBodies[0];
+    if (!tbody) return;
+
+    Array.from(tbody.rows).forEach((tr) => {
+      // ensure we always have a dedicated cell for our link
+      let td = tr.querySelector('td.report-col');
+      if (!td) {
+        td = document.createElement('td');
+        td.className = 'report-col';
+        tr.appendChild(td);
+      } else {
+        td.textContent = '';
+      }
+
+      const runName = tr.cells[0]?.textContent.trim();
+      if (!runName) return;
+
+      // Build link to submissions/<run>/report.html
+      const a = document.createElement('a');
+      a.href = `submissions/${runName}/report.html`;
+      a.textContent = 'View';
+      a.target = '_blank';
+      a.rel = 'noopener';
+      td.appendChild(a);
+    });
+  }
+
+  // --- Ensure links are added after EVERY render ---
+  // Save original render, wrap it to call addReportLinks afterwards.
+  const _render = window.render;
+  window.render = function (...args) {
+    const result = _render.apply(this, args);
+    // Run on next tick so the DOM is updated
+    setTimeout(addReportLinks, 0);
+    return result;
+  };
+
+  // If your page calls render(list) on load, the wrapper above will handle it.
+  // If not, run once on DOM ready as a safety:
+  document.addEventListener('DOMContentLoaded', () => setTimeout(addReportLinks, 0));
+</script>
 
 </body>
 </html>
