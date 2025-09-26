@@ -99,5 +99,43 @@
       render(list);
     });
   </script>
+  <script>
+// Adds a "Report" column that links to submissions/<run_name>/report.html
+(function () {
+  // Find the first table on the page (the leaderboard)
+  const table = document.querySelector('table');
+  if (!table) return;
+
+  // Add header cell "Report" at the end
+  const theadRow = table.tHead && table.tHead.rows && table.tHead.rows[0];
+  if (theadRow) {
+    const th = document.createElement('th');
+    th.textContent = 'Report';
+    theadRow.appendChild(th);
+  }
+
+  // Add a "View" link cell for each body row
+  const tbody = table.tBodies && table.tBodies[0];
+  if (!tbody) return;
+
+  Array.from(tbody.rows).forEach((tr) => {
+    const runName = tr.cells[0] ? tr.cells[0].textContent.trim() : '';
+    const td = document.createElement('td');
+
+    if (runName) {
+      const a = document.createElement('a');
+      a.href = `submissions/${runName}/report.html`;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = 'View';
+      td.appendChild(a);
+    } else {
+      td.textContent = '';
+    }
+    tr.appendChild(td);
+  });
+})();
+</script>
+
 </body>
 </html>
