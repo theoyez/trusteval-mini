@@ -100,61 +100,75 @@
     });
   </script>
 <script>
-  // Add a "Report" column with "View" links for each row
+/* One canonical “Report” column: added after every render, no duplicates,
+   and only shows a link if submissions/<run>/report.html actually exists. */
+(function () {
   function addReportLinks() {
-    const table = document.querySelector('table');
+    const table = document.querySelector('#t');
     if (!table) return;
 
-    // Ensure the header exists and is uniquely identifiable
-    const thead = table.tHead;
-    if (thead && !thead.querySelector('th.report-col')) {
+    // Ensure we have exactly one header cell for Report
+    const headRow = table.tHead?.rows?.[0];
+    if (headRow && !headRow.querySelector('th[data-report]')) {
       const th = document.createElement('th');
       th.textContent = 'Report';
-      th.className = 'report-col';
-      thead.rows[0].appendChild(th);
+      th.setAttribute('data-report', '');
+      headRow.appendChild(th);
     }
 
-    const tbody = table.tBodies[0];
-    if (!tbody) return;
+    const body = table.tBodies?.[0];
+    if (!body) return;
 
-    Array.from(tbody.rows).forEach((tr) => {
-      // ensure we always have a dedicated cell for our link
-      let td = tr.querySelector('td.report-col');
+    [...body.rows].forEach((tr) => {
+      // Ensure one cell per row for the report link
+      let td = tr.querySelector('td[data-report]');
       if (!td) {
         td = document.createElement('td');
-        td.className = 'report-col';
+        td.setAttribute('data-report', '');
         tr.appendChild(td);
       } else {
         td.textContent = '';
       }
 
-      const runName = tr.cells[0]?.textContent.trim();
-      if (!runName) return;
+      // First cell is the run name (must match the folder name)
+      const run = tr.cells?.[0]?.textContent.trim();
+      if (!run) return;
 
-      // Build link to submissions/<run>/report.html
-      const a = document.createElement('a');
-      a.href = `submissions/${runName}/report.html`;
-      a.textContent = 'View';
-      a.target = '_blank';
-      a.rel = 'noopener';
-      td.appendChild(a);
+      const url = `submissions/${run}/report.html`;
+
+      // Only show 'View' if the file exists
+      fetch(url, { method: 'HEAD' })
+        .then((res) => {
+          if (res.ok) {
+            const a = document.createElement('a');
+            a.href = url;
+            a.textContent = 'View';
+            a.target = '_blank';
+            a.rel = 'noopener';
+            td.appendChild(a);
+          } else {
+            td.textContent = '—';
+          }
+        })
+        .catch(() => {
+          td.textContent = '—';
+        });
     });
   }
 
-  // --- Ensure links are added after EVERY render ---
-  // Save original render, wrap it to call addReportLinks afterwards.
+  // Wrap the existing render() so links are rebuilt after each render
   const _render = window.render;
   window.render = function (...args) {
-    const result = _render.apply(this, args);
-    // Run on next tick so the DOM is updated
+    const out = _render.apply(this, args);
     setTimeout(addReportLinks, 0);
-    return result;
+    return out;
   };
 
-  // If your page calls render(list) on load, the wrapper above will handle it.
-  // If not, run once on DOM ready as a safety:
+  // Safety: run once on load in case render() was already called
   document.addEventListener('DOMContentLoaded', () => setTimeout(addReportLinks, 0));
+})();
 </script>
+
 
 </body>
 </html>
